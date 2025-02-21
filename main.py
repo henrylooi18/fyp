@@ -26,6 +26,7 @@ plt.plot(mean_co2_per_year['Year'], mean_co2_per_year['Carbon_Footprint_MT'], ma
 
 # plotting target results of 2014 (2010 to 2013)
 plt.xlabel("Year")
+plt.xticks(mean_co2_per_year['Year'].astype(int)) 
 plt.ylabel("Mean Carbon Footprint (MT)")
 plt.title("Target Mean Carbon Footprint Per Year (2010-2014)")
 plt.grid(True)
