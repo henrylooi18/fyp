@@ -9,7 +9,7 @@ column_name = 'Carbon_Footprint_MT'
 
 # check rows with missing values
 missing_values = read_dataset[column_name].isnull().sum()
-print ("Missing Values: ", missing_values)
+print ("Missing Values from Dataset: ", missing_values)
 
 ## lag features
 # target results of 2014 (2010 to 2013)
