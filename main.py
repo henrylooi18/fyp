@@ -1,12 +1,11 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-import statsmodels.api as sm
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.svm import SVR
-from statsmodels.tsa.arima.model import ARIMA
+
 
 # read dataset
 read_dataset = pd.read_csv('sustainable_fashion_trends_2024.csv')
@@ -16,90 +15,87 @@ column_name = 'Carbon_Footprint_MT'
 
 # check rows with missing values
 missing_values = read_dataset[column_name].isnull().sum()
-print ("Missing Values from Dataset: ", missing_values)
+print("Missing Values from Dataset: ", missing_values)
 
 ## lag features
-# target results of 2014 (2010 to 2013)
-read_dataset_lag = read_dataset[(read_dataset['Year'] >= 2010) & (read_dataset['Year'] <= 2014)]
+read_dataset_lag = read_dataset[(read_dataset['Year'] >= 2010) & (read_dataset['Year'] <= 2024)]
 
 # mean carbon footprint per year
 mean_co2_per_year = read_dataset_lag.groupby('Year')['Carbon_Footprint_MT'].mean().reset_index()
 
+years = mean_co2_per_year['Year'].values
+
 # convert year into index
 mean_co2_per_year['Year_Index'] = mean_co2_per_year['Year'] - mean_co2_per_year['Year'].min()
 
-plt.figure(figsize=(8,5))
-plt.plot(mean_co2_per_year['Year'], mean_co2_per_year['Carbon_Footprint_MT'], marker='o', linestyle='-', color='b')
+## store data in X and y
+X, y = mean_co2_per_year['Year_Index'].values, mean_co2_per_year['Carbon_Footprint_MT'].values
 
-# plotting target results of 2014 (2010 to 2013)
-# plt.xlabel("Year")
-# plt.xticks(mean_co2_per_year['Year'].astype(int)) 
-# plt.ylabel("Mean Carbon Footprint (MT)")
-# plt.title("Target Mean Carbon Footprint Per Year (2010-2014)")
-# plt.grid(True)
-# plt.show()
+# convert into numpy array
+X = np.array([X]).T
+y = np.array(y).ravel()
 
-# SVR Model preparation
-# X = mean_co2_per_year[['Year_Index']].values  # numerical year index (required by SVR)
-# y = mean_co2_per_year['Carbon_Footprint_MT'].values  # target values
+## split to training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0, shuffle=False)
 
-# print("\nPrepared Data for SVR Model:")
-# print(mean_co2_per_year)
+## normalize the features (only train-test, not full dataset)
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)  # ensure test data is also transformed
 
-# Set Year as index for ARIMA
-mean_co2_per_year.set_index('Year', inplace=True)
+## hyperparameter tuning: test multiple values of C and gamma
+gamma_list = ['auto', 0.5, 0.3, 0.1, 0.05, 0.04, 0.03, 0.02, 0.01, 0.005, 0.004, 0.003, 0.002, 0.001]
+c_list = [1, 10, 1e2, 1e3, 1e4, 1e5]
 
-# Convert to time-series format
-series = mean_co2_per_year['Carbon_Footprint_MT']
+best_c = None
+best_gamma = None
+best_corr = -1  # start with lowest correlation
+best_mse = None
+best_mae = None
+best_y_pred = None
 
-# Split data into 80% training and 20% testing
-train_size = int(len(series) * 0.8)
-train, test = series[:train_size], series[train_size:]
+print("\nHyperparameter Tuning Results:")
 
-# Store history of known values
-history = list(train)
+for c in c_list:
+    for g in gamma_list:
+        svr_model = SVR(kernel='rbf', C=c, gamma=g)
+        svr_model.fit(X_train_scaled, y_train)
+        y_pred = svr_model.predict(X_test_scaled)
 
-# Store predictions
-predictions = []
+        # evaluate model
+        corr_coeff = np.corrcoef(y_test, y_pred)[0, 1]
+        mse = mean_squared_error(y_test, y_pred)
+        mae = mean_absolute_error(y_test, y_pred)
 
-# **Apply ARIMA model iteratively (Rolling Forecast)**
-print("\nARIMA Predictions vs. Actual Values:")
-for t in range(len(test)):
-    model = ARIMA(history, order=(5,1,0))  # (p=5, d=1, q=0) from ARIMA(p,d,q)
-    model_fit = model.fit()
-    
-    # Forecast next step
-    output = model_fit.forecast()
-    yhat = output[0]
-    
-    # Store prediction
-    predictions.append(yhat)
-    
-    # Get actual observation
-    obs = test.iloc[t]
-    history.append(obs)
+        print(f"For C = {c}, gamma = {g}, correlation coefficient = {corr_coeff:.3f}, Mean Squared Error = {mse:.3f}")
 
-    # Print predicted vs actual
-    print(f"Predicted={yhat:.2f}, Expected={obs:.2f}")
+        # track best model
+        if corr_coeff > best_corr:
+            best_corr = corr_coeff
+            best_c = c
+            best_gamma = g
+            best_mse = mse
+            best_mae = mae
+            best_y_pred = y_pred
 
-# **Evaluate Model Performance**
-mse = mean_squared_error(test, predictions)
-mae = mean_absolute_error(test, predictions)
-print("\nARIMA Model Evaluation:")
-print(f"Mean Absolute Error (MAE): ", mae)
-print(f"Mean Squared Error (MSE): ", mse)
+# display best parameters
+print("\nBest Parameters Found:")
+print(f"Best C = ", best_c) 
+print(f"Best Gamma = ", best_gamma)
+print(f"Best Correlation Coefficient = ", best_corr)
+print(f"Best Mean Squared Error = ", best_mse)
+print(f"Best Mean Absolute Error = ", best_mae)
 
-# **Plot Actual vs. Predicted Values**
-plt.figure(figsize=(8,5))
-plt.plot(test.index, test, marker='o', label="Actual", color='blue')
-plt.plot(test.index, predictions, marker='s', linestyle="dashed", label="Predicted", color='red')
+## plot the results (use only test years for better clarity)
+plt.figure(figsize=(10, 6))
+plt.scatter(years[-len(y_test):], y_test, color='blue', label='Actual')  # Use test years
+plt.scatter(years[-len(y_pred):], y_pred, color='red', label='Predicted')  # Predictions for test years
+plt.plot(years[-len(y_pred):], y_pred, color='red', linestyle="dashed", label='SVR Predicted')
 
-# Customize plot
+# display the plot
 plt.xlabel("Year")
 plt.ylabel("Mean Carbon Footprint (MT)")
-plt.title("ARIMA Predicted vs Actual Carbon Footprint (2014)")
 plt.legend()
+plt.title("SVR Predicted vs Actual Carbon Footprint (Test Data)")
 plt.grid(True)
-
-# Show plot
 plt.show()
