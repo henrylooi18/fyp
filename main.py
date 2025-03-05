@@ -10,7 +10,6 @@ def main():
     print("\nRunning SVR Model...")
     svr_model.run_svr(X_train_scaled, X_test_scaled, y_train, y_test, years, scaler)
 
-    # Uncomment to run additional models
     # print("\nRunning ARIMA Model...")
     # arima_model.run_arima()
 
