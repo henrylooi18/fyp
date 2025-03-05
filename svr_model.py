@@ -18,7 +18,7 @@ best_mse = None
 best_mae = None
 best_y_pred = None
 
-print("\nHyperparameter Tuning Results:")
+print("\nSVR Hyperparameter Tuning Results:")
 
 for c in c_list:
     for g in gamma_list:
@@ -43,7 +43,7 @@ for c in c_list:
             best_y_pred = y_pred
 
 # display best parameters
-print("\nBest Parameters Found:")
+print("\nBest SVR Hyperparameters Found:")
 print(f"Best C = {best_c}") 
 print(f"Best Gamma = {best_gamma}")
 print(f"Best Correlation Coefficient = {best_corr}")
