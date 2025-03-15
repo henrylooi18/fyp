@@ -8,7 +8,7 @@ def load_and_preprocess_data():
     read_dataset = pd.read_csv('sustainable_fashion_trends_2024.csv')
 
     # clean selected column
-    column_name = 'Carbon_Footprint_MT'
+    column_name = 'Water_Usage_Liters'
     
     # check missing values
     missing_values = read_dataset[column_name].isnull().sum()

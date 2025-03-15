@@ -99,16 +99,14 @@ def run_arima_model(years):
     plt.figure(figsize=(10,6))
 
     plt.plot(train.index, train, marker='o', color='green', label="Training Data")
-
     plt.plot(test.index, test, marker='o', color='blue', label="Test Data", )
-    
     plt.plot(test.index, best_predictions, marker='o', linestyle="dashed", label="ARIMA Predicted Data", color='red')
 
     # customize plot
     plt.xlabel("Year")
     plt.ylabel("Mean Carbon Footprint (MT)")
     plt.xticks(np.arange(min(years), max(years)+1, 1))
-    plt.ylim(200, 300)
+    plt.ylim(230, 270)
     plt.title(f"ARIMA({best_p},{best_d},{best_q}) Predicted vs Actual Carbon Footprint")
     plt.legend()
 

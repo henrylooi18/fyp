@@ -21,7 +21,7 @@ def run_svr_model(X_train_scaled, X_test_scaled, y_train, y_test, years, scaler)
 
     print("\nSVR Hyperparameter Tuning Results:")
 
-    # grid search for best SVR parameters
+    # nested for loop - grid search for best SVR C and gamma parameters combination
     for c in c_list:  # regularization parameter (trade-off between achieving low error and maintaining a simple model)
         for g in gamma_list:  # kernel coefficient (how much influence a single training example has)
             svr_model = SVR(kernel='rbf', C=c, gamma=g)
@@ -53,18 +53,15 @@ def run_svr_model(X_train_scaled, X_test_scaled, y_train, y_test, years, scaler)
 
     ## plot the results (use only test years for better clarity)
     plt.figure(figsize=(10, 6))
-
     plt.plot(years[:len(y_train)], y_train, color='green', marker='o', label='Training Data')
-
     plt.plot(years[-len(y_test):], y_test, color='blue', marker='o', label='Test Data')
-    
     plt.plot(years[-len(best_y_pred):], best_y_pred, color='red', marker='o', linestyle="dashed", label='SVR Predicted Data')
 
     # display the plot
     plt.xlabel("Year")
     plt.ylabel("Mean Carbon Footprint (MT)")
     plt.xticks(np.arange(min(years), max(years)+1, 1))
-    plt.ylim(200, 300)
+    plt.ylim(230, 270)
     plt.legend()
     plt.title("SVR Predicted vs Actual Carbon Footprint (Test Data)")
     plt.show()
